@@ -8,6 +8,7 @@ from PIL import Image
 import pytesseract
 
 
+
 def extract_text_from_pdf(file):
     pdf_bytes = file.read()
     document = fitz.open(stream=pdf_bytes, filetype="pdf")
