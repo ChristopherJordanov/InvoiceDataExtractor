@@ -1,57 +1,80 @@
 import streamlit as st
+
 from extractor import extract_text
 from ai_extractor import extract_invoice_data
 
-# Show title and description.
+
+# Page configuration
+st.set_page_config(
+    page_title="Invoice Data Extractor",
+    page_icon="📄",
+    layout="wide"
+)
+
+
+# Header
 st.title("Invoice Data Extractor")
+
 st.write(
-    "Upload an invoice below and the data will be ready for you below "
+    "Upload an invoice and automatically extract its information."
 )
 
 
-# Let the user upload a file via `st.file_uploader`
+# File upload
 uploaded_file = st.file_uploader(
-    "Upload an invoice (.pdf, .png or .jpg)", type=("pdf", "png", "jpg")
+    "Upload an invoice",
+    type=["pdf", "png", "jpg", "jpeg"],
+    help="Supported formats: PDF, PNG, JPG and JPEG"
 )
+
 
 if uploaded_file is not None:
+
     st.success(f"Uploaded: {uploaded_file.name}")
 
-    if st.button("Extract text"):
+    if st.button("Extract invoice data", type="primary"):
+
+        # Text extraction
         with st.spinner("Reading invoice..."):
+
             try:
                 text = extract_text(uploaded_file)
 
-                if text.strip():
-                    st.subheader("Extracted text")
-                    st.text_area(
-                        "Text",
-                        text,
-                        height=400
-                    )
-                else:
-                    st.warning("No text could be extracted from this file.")
+            except Exception as e:
+                st.error(f"Error while reading the invoice: {e}")
+                st.stop()
+
+
+        # Check extracted text
+        if not text.strip():
+            st.warning(
+                "No text could be extracted from this invoice."
+            )
+            st.stop()
+
+
+        # Show OCR text
+        with st.expander("View extracted text"):
+
+            st.text_area(
+                "OCR Text",
+                text,
+                height=300
+            )
+
+
+        # AI integration
+        with st.spinner("Analyzing invoice with AI..."):
+
+            try:
+                invoice_data = extract_invoice_data(text)
 
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"Error while analyzing the invoice: {e}")
+                st.stop()
 
-    if text.strip():
-        st.subheader("Extracted text")
 
-        st.text_area(
-            "Text",
-            text,
-            height=400
-        )
+        # Display results
+        st.subheader("Extracted invoice data")
 
-        if st.button("Extract invoice data"):
-            with st.spinner("Analyzing invoice..."):
-                try:
-                    data = extract_invoice_data(text)
-
-                    st.subheader("Invoice data")
-
-                    st.json(data)
-
-                except Exception as e:
-                    st.error(f"Error: {e}")
+        st.json(invoice_data)
