@@ -1,5 +1,6 @@
 import streamlit as st
 from extractor import extract_text
+from ai_extractor import extract_invoice_data
 
 # Show title and description.
 st.title("Invoice Data Extractor")
@@ -30,6 +31,27 @@ if uploaded_file is not None:
                     )
                 else:
                     st.warning("No text could be extracted from this file.")
+
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+if text.strip():
+    st.subheader("Extracted text")
+
+    st.text_area(
+        "Text",
+        text,
+        height=400
+    )
+
+    if st.button("Extract invoice data"):
+        with st.spinner("Analyzing invoice..."):
+            try:
+                data = extract_invoice_data(text)
+
+                st.subheader("Invoice data")
+
+                st.json(data)
 
             except Exception as e:
                 st.error(f"Error: {e}")
