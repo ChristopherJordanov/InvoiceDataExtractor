@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
 
 
@@ -11,6 +11,13 @@ class Supplier(BaseModel):
     iban: Optional[str] = None
     bic: Optional[str] = None
 
+    @field_validator("eik", mode="before")
+    @classmethod
+    def convert_eik_to_string(cls, value):
+        if value is not None:
+            return str(value)
+        return value
+
 
 # Customer information
 class Customer(BaseModel):
@@ -18,6 +25,13 @@ class Customer(BaseModel):
     eik: Optional[str] = None
     vat_number: Optional[str] = None
     address: Optional[str] = None
+
+    @field_validator("eik", mode="before")
+    @classmethod
+    def convert_eik_to_string(cls, value):
+        if value is not None:
+            return str(value)
+        return value
 
 
 # Invoice item
