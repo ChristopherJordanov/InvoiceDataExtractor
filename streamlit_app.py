@@ -631,14 +631,12 @@ if uploaded_files:
             customer_rows
         )
 
-
         # Create Excel
         excel_file = io.BytesIO()
 
-
         with pd.ExcelWriter(
-            excel_file,
-            engine="openpyxl"
+                excel_file,
+                engine="openpyxl"
         ) as writer:
 
             invoices_df.to_excel(
@@ -664,6 +662,98 @@ if uploaded_files:
                 sheet_name="Customers",
                 index=False
             )
+
+        # Format Excel
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.worksheet.table import Table, TableStyleInfo
+
+        workbook = writer.book
+
+        for worksheet in workbook.worksheets:
+
+            # Freeze header row
+            worksheet.freeze_panes = "A2"
+
+            # Header styling
+            for cell in worksheet[1]:
+                cell.font = Font(
+                    bold=True,
+                    color="FFFFFF"
+                )
+
+                cell.fill = PatternFill(
+                    fill_type="solid",
+                    fgColor="2563EB"
+                )
+
+                cell.alignment = Alignment(
+                    horizontal="center",
+                    vertical="center"
+                )
+
+            # Automatic column width
+            for column in worksheet.columns:
+
+                max_length = 0
+
+                column_letter = column[0].column_letter
+
+                for cell in column:
+
+                    if cell.value is not None:
+                        cell_length = len(
+                            str(cell.value)
+                        )
+
+                        max_length = max(
+                            max_length,
+                            cell_length
+                        )
+
+                worksheet.column_dimensions[
+                    column_letter
+                ].width = min(
+                    max(max_length + 2, 12),
+                    50
+                )
+
+            # Enable filters
+            if worksheet.max_row > 1:
+
+                last_cell = worksheet.cell(
+                    row=worksheet.max_row,
+                    column=worksheet.max_column
+                ).coordinate
+
+                table_reference = f"A1:{last_cell}"
+
+                table = Table(
+                    displayName=f"Table{worksheet.title}",
+                    ref=table_reference
+                )
+
+                style = TableStyleInfo(
+                    name="TableStyleMedium2",
+                    showFirstColumn=False,
+                    showLastColumn=False,
+                    showRowStripes=True,
+                    showColumnStripes=False
+                )
+
+                table.tableStyleInfo = style
+
+                worksheet.add_table(table)
+
+                # Vertical alignment
+                for row in worksheet.iter_rows():
+
+                    for cell in row:
+
+                        cell.alignment = Alignment(
+                            vertical="center"
+                        )
+
+                excel_file.seek(0)
 
 
         excel_file.seek(0)
