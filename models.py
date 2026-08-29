@@ -39,7 +39,6 @@ class InvoiceItem(BaseModel):
     description: Optional[str] = None
     quantity: Optional[float] = None
     unit_price: Optional[float] = None
-    vat_rate: Optional[float] = None
     total_price: Optional[float] = None
 
 
@@ -47,7 +46,6 @@ class InvoiceItem(BaseModel):
 class Invoice(BaseModel):
     number: Optional[str] = None
     date: Optional[str] = None
-    due_date: Optional[str] = None
     currency: Optional[str] = None
 
 

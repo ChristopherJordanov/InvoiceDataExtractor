@@ -4,7 +4,6 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from models import InvoiceData
 
 
 # Load environment variables
@@ -45,7 +44,6 @@ Return ONLY valid JSON using exactly this structure:
     "invoice": {{
         "number": null,
         "date": null,
-        "due_date": null,
         "currency": null
     }},
     "items": [
@@ -53,7 +51,6 @@ Return ONLY valid JSON using exactly this structure:
             "description": null,
             "quantity": null,
             "unit_price": null,
-            "vat_rate": null,
             "total_price": null
         }}
     ],
@@ -106,7 +103,4 @@ Invoice text:
     # Parse AI response
     data = json.loads(response.output_text)
 
-    # Validate response
-    invoice_data = InvoiceData.model_validate(data)
-
-    return invoice_data
+    return data
