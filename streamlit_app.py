@@ -73,10 +73,6 @@ if uploaded_file is not None:
                 st.error(f"Error while analyzing the invoice: {e}")
                 st.stop()
 
-
-        # Display results
-        st.subheader("Extracted invoice data")
-
         # Display results
         st.subheader("Extracted invoice data")
 

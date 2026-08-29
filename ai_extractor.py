@@ -18,13 +18,14 @@ client = OpenAI(
 
 
 def extract_invoice_data(text):
+
     # AI extraction prompt
     prompt = f"""
 You are an invoice data extraction system.
 
-Extract information from the invoice text and return ONLY valid JSON.
+Analyze the invoice text and extract all available information.
 
-Use exactly this structure:
+Return ONLY valid JSON using exactly this structure:
 
 {{
     "supplier": {{
@@ -47,6 +48,15 @@ Use exactly this structure:
         "due_date": null,
         "currency": null
     }},
+    "items": [
+        {{
+            "description": null,
+            "quantity": null,
+            "unit_price": null,
+            "vat_rate": null,
+            "total_price": null
+        }}
+    ],
     "totals": {{
         "subtotal": null,
         "vat": null,
@@ -54,13 +64,33 @@ Use exactly this structure:
     }}
 }}
 
-Rules:
-- Never invent information.
-- Use null when information is missing.
-- Preserve values from the invoice.
-- Dates must use YYYY-MM-DD when possible.
-- Numbers must be returned as numbers, not strings.
-- Return ONLY JSON.
+Important rules:
+
+1. Never invent information.
+2. Use null when a value is not present or cannot be determined.
+3. Extract the supplier's EIK/BULSTAT whenever present.
+4. EIK/BULSTAT may appear under different names, including:
+    - ЕИК
+    - Булстат
+    - БУЛСТАТ
+    - UIC
+    - Company ID
+5. Do not confuse EIK/BULSTAT with VAT number.
+6. A Bulgarian VAT number usually starts with BG followed by digits.
+7. Extract IBAN exactly as shown on the invoice.
+8. Extract every invoice item/product/service.
+9. For every item extract:
+    - description
+    - quantity
+    - unit price
+    - VAT rate
+    - total price
+10. If there are multiple items, create a separate object for each item.
+11. Do not combine multiple invoice items into one item.
+12. Preserve the original product/service description as accurately as possible.
+13. Numbers must be returned as numbers, not strings.
+14. Dates should use YYYY-MM-DD when possible.
+15. Return ONLY valid JSON.
 
 Invoice text:
 

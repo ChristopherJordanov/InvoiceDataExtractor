@@ -20,6 +20,15 @@ class Customer(BaseModel):
     address: Optional[str] = None
 
 
+# Invoice item
+class InvoiceItem(BaseModel):
+    description: Optional[str] = None
+    quantity: Optional[float] = None
+    unit_price: Optional[float] = None
+    vat_rate: Optional[float] = None
+    total_price: Optional[float] = None
+
+
 # Invoice information
 class Invoice(BaseModel):
     number: Optional[str] = None
@@ -40,4 +49,5 @@ class InvoiceData(BaseModel):
     supplier: Supplier
     customer: Customer
     invoice: Invoice
+    items: list[InvoiceItem]
     totals: Totals
