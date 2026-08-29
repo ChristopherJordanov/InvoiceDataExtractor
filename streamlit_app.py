@@ -1,5 +1,6 @@
+import io
+
 import pandas as pd
-import json
 import streamlit as st
 
 from extractor import extract_text
@@ -18,222 +19,280 @@ st.set_page_config(
 st.title("Invoice Data Extractor")
 
 st.write(
-    "Upload an invoice and automatically extract its information."
+    "Upload one or multiple invoices and automatically extract their information."
 )
 
 
 # File upload
-uploaded_file = st.file_uploader(
-    "Upload an invoice",
+uploaded_files = st.file_uploader(
+    "Upload invoices",
     type=["pdf", "png", "jpg", "jpeg"],
+    accept_multiple_files=True,
     help="Supported formats: PDF, PNG, JPG and JPEG"
 )
 
 
-if uploaded_file is not None:
+if uploaded_files:
 
-    st.success(f"Uploaded: {uploaded_file.name}")
+    st.success(f"{len(uploaded_files)} invoice(s) uploaded")
 
     if st.button("Extract invoice data", type="primary"):
 
-        # Text extraction
-        with st.spinner("Reading invoice..."):
+        all_invoice_data = []
 
-            try:
-                text = extract_text(uploaded_file)
+        # Process invoices
+        for index, uploaded_file in enumerate(uploaded_files):
 
-            except Exception as e:
-                st.error(f"Error while reading the invoice: {e}")
-                st.stop()
+            st.write(
+                f"Processing: **{uploaded_file.name}**"
+            )
+
+            with st.spinner(
+                f"Reading {uploaded_file.name}..."
+            ):
+
+                try:
+                    text = extract_text(uploaded_file)
+
+                except Exception as e:
+                    st.error(
+                        f"Error while reading "
+                        f"{uploaded_file.name}: {e}"
+                    )
+                    continue
 
 
-        # Check extracted text
-        if not text.strip():
-            st.warning(
-                "No text could be extracted from this invoice."
+            # Check extracted text
+            if not text.strip():
+                st.warning(
+                    f"No text could be extracted from "
+                    f"{uploaded_file.name}"
+                )
+                continue
+
+
+            # AI integration
+            with st.spinner(
+                f"Analyzing {uploaded_file.name}..."
+            ):
+
+                try:
+                    invoice_data = extract_invoice_data(text)
+
+                except Exception as e:
+                    st.error(
+                        f"Error while analyzing "
+                        f"{uploaded_file.name}: {e}"
+                    )
+                    continue
+
+
+            # Add filename
+            invoice_data["filename"] = uploaded_file.name
+
+            all_invoice_data.append(invoice_data)
+
+            st.success(
+                f"{uploaded_file.name} processed successfully"
+            )
+
+
+        # Check results
+        if not all_invoice_data:
+            st.error(
+                "No invoices could be processed."
             )
             st.stop()
 
 
-        # Show OCR text
-        with st.expander("View extracted text"):
-
-            st.text_area(
-                "OCR Text",
-                text,
-                height=300
-            )
-
-
-        # AI integration
-        with st.spinner("Analyzing invoice with AI..."):
-
-            try:
-                invoice_data = extract_invoice_data(text)
-
-            except Exception as e:
-                st.error(
-                    f"Error while analyzing the invoice: {e}"
-                )
-                st.stop()
-
-
-        # Extract sections
-        supplier = invoice_data.get("supplier", {})
-        customer = invoice_data.get("customer", {})
-        invoice = invoice_data.get("invoice", {})
-        items = invoice_data.get("items", [])
-        totals = invoice_data.get("totals", {})
-
-
-        # Helper function
-        def display_value(value):
-            return value if value not in [None, ""] else "Not found"
-
-
-        # Supplier and customer
         st.divider()
 
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.subheader("Supplier")
-
-            st.write("**Name:**", display_value(supplier.get("name")))
-            st.write("**EIK / BULSTAT:**", display_value(supplier.get("eik")))
-            st.write("**VAT Number:**", display_value(supplier.get("vat_number")))
-            st.write("**Address:**", display_value(supplier.get("address")))
-            st.write("**IBAN:**", display_value(supplier.get("iban")))
-            st.write("**BIC:**", display_value(supplier.get("bic")))
-
-        with col2:
-            st.subheader("Customer")
-
-            st.write("**Name:**", display_value(customer.get("name")))
-            st.write("**EIK / BULSTAT:**", display_value(customer.get("eik")))
-            st.write("**VAT Number:**", display_value(customer.get("vat_number")))
-            st.write("**Address:**", display_value(customer.get("address")))
+        st.subheader("Extracted Data")
 
 
-        # Invoice information
-        st.divider()
+        # Create tables
+        invoice_rows = []
+        item_rows = []
+        supplier_rows = []
+        customer_rows = []
 
-        st.subheader("Invoice")
 
-        col1, col2, col3, col4 = st.columns(4)
+        for invoice_data in all_invoice_data:
 
-        with col1:
-            st.metric(
-                "Invoice Number",
-                display_value(invoice.get("number"))
+            supplier = invoice_data.get(
+                "supplier", {}
             )
 
-        with col2:
-            st.metric(
-                "Date",
-                display_value(invoice.get("date"))
+            customer = invoice_data.get(
+                "customer", {}
             )
 
-        with col3:
-            st.metric(
-                "Currency",
-                display_value(invoice.get("currency"))
+            invoice = invoice_data.get(
+                "invoice", {}
+            )
+
+            totals = invoice_data.get(
+                "totals", {}
+            )
+
+            filename = invoice_data.get(
+                "filename"
             )
 
 
-        # Invoice items
-        st.divider()
+            # Invoice row
+            invoice_rows.append({
+                "File": filename,
+                "Invoice Number": invoice.get("number"),
+                "Date": invoice.get("date"),
+                "Currency": invoice.get("currency"),
+                "Subtotal": totals.get("subtotal"),
+                "VAT": totals.get("vat"),
+                "Total": totals.get("total")
+            })
+
+
+            # Supplier row
+            supplier_rows.append({
+                "File": filename,
+                "Name": supplier.get("name"),
+                "EIK / BULSTAT": supplier.get("eik"),
+                "VAT Number": supplier.get("vat_number"),
+                "Address": supplier.get("address"),
+                "IBAN": supplier.get("iban"),
+                "BIC": supplier.get("bic")
+            })
+
+
+            # Customer row
+            customer_rows.append({
+                "File": filename,
+                "Name": customer.get("name"),
+                "EIK / BULSTAT": customer.get("eik"),
+                "VAT Number": customer.get("vat_number"),
+                "Address": customer.get("address")
+            })
+
+
+            # Item rows
+            for item in invoice_data.get(
+                "items", []
+            ):
+
+                item_rows.append({
+                    "File": filename,
+                    "Invoice Number": invoice.get("number"),
+                    "Product / Service": item.get(
+                        "description"
+                    ),
+                    "Quantity": item.get(
+                        "quantity"
+                    ),
+                    "Unit Price": item.get(
+                        "unit_price"
+                    ),
+                    "VAT %": item.get(
+                        "vat_rate"
+                    ),
+                    "Total": item.get(
+                        "total_price"
+                    )
+                })
+
+
+        # Convert to DataFrames
+        invoices_df = pd.DataFrame(
+            invoice_rows
+        )
+
+        items_df = pd.DataFrame(
+            item_rows
+        )
+
+        suppliers_df = pd.DataFrame(
+            supplier_rows
+        )
+
+        customers_df = pd.DataFrame(
+            customer_rows
+        )
+
+
+        # Display results
+        st.subheader("Invoices")
+
+        st.dataframe(
+            invoices_df,
+            use_container_width=True,
+            hide_index=True
+        )
+
 
         st.subheader("Items")
 
-        if items:
-
-            items_table = pd.DataFrame(items)
-
-            items_table = items_table.rename(
-                columns={
-                    "description": "Product / Service",
-                    "quantity": "Quantity",
-                    "unit_price": "Unit Price",
-                    "vat_rate": "VAT %",
-                    "total_price": "Total"
-                }
-            )
+        if not items_df.empty:
 
             st.dataframe(
-                items_table,
+                items_df,
                 use_container_width=True,
                 hide_index=True
             )
 
         else:
-            st.info("No invoice items found.")
+
+            st.info(
+                "No invoice items found."
+            )
 
 
-        # Totals
+        # Excel export
         st.divider()
 
-        st.subheader("Totals")
+        st.subheader("Excel Export")
 
-        col1, col2, col3 = st.columns(3)
+        excel_file = io.BytesIO()
 
-        with col1:
-            st.metric(
-                "Subtotal",
-                display_value(totals.get("subtotal"))
+
+        with pd.ExcelWriter(
+            excel_file,
+            engine="openpyxl"
+        ) as writer:
+
+            invoices_df.to_excel(
+                writer,
+                sheet_name="Invoices",
+                index=False
             )
 
-        with col2:
-            st.metric(
-                "VAT",
-                display_value(totals.get("vat"))
+            items_df.to_excel(
+                writer,
+                sheet_name="Items",
+                index=False
             )
 
-        with col3:
-            st.metric(
-                "Total",
-                display_value(totals.get("total"))
+            suppliers_df.to_excel(
+                writer,
+                sheet_name="Suppliers",
+                index=False
+            )
+
+            customers_df.to_excel(
+                writer,
+                sheet_name="Customers",
+                index=False
             )
 
 
-        # Raw JSON
-        st.divider()
+        excel_file.seek(0)
 
-        with st.expander("View raw JSON"):
-            st.json(invoice_data)
 
-        # Export data
-        st.divider()
-
-        st.subheader("Export")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            json_data = json.dumps(
-                invoice_data,
-                indent=4,
-                ensure_ascii=False
-            )
-
-            st.download_button(
-                label="Download JSON",
-                data=json_data,
-                file_name="invoice_data.json",
-                mime="application/json"
-            )
-
-        with col2:
-            if items:
-                csv_data = pd.DataFrame(items).to_csv(
-                    index=False
-                )
-
-                st.download_button(
-                    label="Download CSV",
-                    data=csv_data,
-                    file_name="invoice_items.csv",
-                    mime="text/csv"
-                )
-            else:
-                st.info("No items available for CSV export.")
+        st.download_button(
+            label="Download Excel",
+            data=excel_file,
+            file_name="invoice_data.xlsx",
+            mime=(
+                "application/vnd.openxmlformats-"
+                "officedocument.spreadsheetml.sheet"
+            ),
+            type="primary"
+        )
