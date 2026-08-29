@@ -77,4 +77,7 @@ if uploaded_file is not None:
         # Display results
         st.subheader("Extracted invoice data")
 
-        st.json(invoice_data)
+        # Display results
+        st.subheader("Extracted invoice data")
+
+        st.json(invoice_data.model_dump())
