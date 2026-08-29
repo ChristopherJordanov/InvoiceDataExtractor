@@ -31,7 +31,7 @@ def extract_text_from_image(file):
 
     text = pytesseract.image_to_string(
         image,
-        lang="eng"
+        lang="bul+eng"
     )
 
     return text
