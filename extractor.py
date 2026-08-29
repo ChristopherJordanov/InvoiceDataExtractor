@@ -1,12 +1,15 @@
 import io
+import shutil
 
 import fitz
 import pytesseract
 
 from PIL import Image
 
-import pytesseract
+tesseract_path = shutil.which("tesseract")
 
+if tesseract_path:
+    pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
 
 def extract_text_from_pdf(file):
