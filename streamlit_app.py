@@ -35,23 +35,23 @@ if uploaded_file is not None:
             except Exception as e:
                 st.error(f"Error: {e}")
 
-if text.strip():
-    st.subheader("Extracted text")
+    if text.strip():
+        st.subheader("Extracted text")
 
-    st.text_area(
-        "Text",
-        text,
-        height=400
-    )
+        st.text_area(
+            "Text",
+            text,
+            height=400
+        )
 
-    if st.button("Extract invoice data"):
-        with st.spinner("Analyzing invoice..."):
-            try:
-                data = extract_invoice_data(text)
+        if st.button("Extract invoice data"):
+            with st.spinner("Analyzing invoice..."):
+                try:
+                    data = extract_invoice_data(text)
 
-                st.subheader("Invoice data")
+                    st.subheader("Invoice data")
 
-                st.json(data)
+                    st.json(data)
 
-            except Exception as e:
-                st.error(f"Error: {e}")
+                except Exception as e:
+                    st.error(f"Error: {e}")
