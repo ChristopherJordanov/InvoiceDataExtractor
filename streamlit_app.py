@@ -7,10 +7,6 @@ st.write(
     "Upload an invoice below and the data will be ready for you below "
 )
 
-openai_api_key = st.text_input("OpenAI API Key", type="password")
-
-
-client = OpenAI(api_key=openai_api_key)
 
 # Let the user upload a file via `st.file_uploader`.
 uploaded_file = st.file_uploader(
