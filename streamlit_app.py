@@ -42,7 +42,8 @@ st.markdown(
 st.title("Invoice Data Extractor")
 
 st.write(
-    "Upload one or multiple invoices and automatically extract their information."
+    "Upload one or multiple invoices and automatically "
+    "extract their information."
 )
 
 
@@ -69,7 +70,6 @@ if uploaded_files:
         f"{len(uploaded_files)} invoice(s) uploaded"
     )
 
-
     if st.button(
         "Extract invoice data",
         type="primary"
@@ -93,7 +93,7 @@ if uploaded_files:
 
             try:
 
-                # Text extraction
+                # OCR / text extraction
                 text = extract_text(
                     uploaded_file
                 )
@@ -105,6 +105,10 @@ if uploaded_files:
                         f"{uploaded_file.name}"
                     )
 
+                    progress_bar.progress(
+                        (index + 1) / len(uploaded_files)
+                    )
+
                     continue
 
 
@@ -114,7 +118,7 @@ if uploaded_files:
                 )
 
 
-                # Add filename
+                # Add original filename
                 invoice_data["filename"] = (
                     uploaded_file.name
                 )
@@ -136,11 +140,15 @@ if uploaded_files:
                     f"{uploaded_file.name}: {e}"
                 )
 
+                progress_bar.progress(
+                    (index + 1) / len(uploaded_files)
+                )
+
 
         status_text.empty()
 
 
-        # Check results
+        # Stop if nothing was processed
         if not all_invoice_data:
 
             st.error(
@@ -183,7 +191,7 @@ if uploaded_files:
             )
 
 
-        # Invoice results
+        # Display each invoice
         for invoice_data in all_invoice_data:
 
             filename = invoice_data.get(
@@ -217,8 +225,9 @@ if uploaded_files:
             )
 
 
-            # Missing important fields
+            # Find missing important fields
             missing_fields = []
+
 
             if not supplier.get("name"):
                 missing_fields.append(
@@ -245,13 +254,13 @@ if uploaded_files:
                     "Invoice date"
                 )
 
-            if not totals.get("total"):
+            if totals.get("total") is None:
                 missing_fields.append(
                     "Total"
                 )
 
 
-            # Invoice header
+            # Invoice section
             st.divider()
 
             st.subheader(
@@ -259,7 +268,7 @@ if uploaded_files:
             )
 
 
-            # Warning
+            # Extraction status
             if missing_fields:
 
                 st.warning(
@@ -274,7 +283,7 @@ if uploaded_files:
                 )
 
 
-            # Supplier and customer
+            # Supplier / Customer
             col1, col2 = st.columns(2)
 
 
@@ -371,7 +380,7 @@ if uploaded_files:
             col1, col2, col3, col4 = st.columns(4)
 
 
-            with col2:
+            with col1:
 
                 st.metric(
                     "Invoice Number",
@@ -381,12 +390,22 @@ if uploaded_files:
                 )
 
 
-            with col3:
+            with col2:
 
                 st.metric(
                     "Date",
                     display_value(
                         invoice.get("date")
+                    )
+                )
+
+
+            with col3:
+
+                st.metric(
+                    "Due Date",
+                    display_value(
+                        invoice.get("due_date")
                     )
                 )
 
@@ -401,7 +420,7 @@ if uploaded_files:
                 )
 
 
-            # Items
+            # Invoice items
             st.markdown(
                 "### Items"
             )
@@ -475,14 +494,16 @@ if uploaded_files:
                 )
 
 
-        # Excel export
+        # ==========================================
+        # EXCEL EXPORT
+        # ==========================================
+
         st.divider()
 
-        st.subheader(
-            "Excel Export"
-        )
+        st.subheader("Excel Export")
 
 
+        # Prepare rows
         invoice_rows = []
         item_rows = []
         supplier_rows = []
@@ -516,7 +537,7 @@ if uploaded_files:
             )
 
 
-            # Invoice row
+            # Invoice
             invoice_rows.append({
                 "File": filename,
                 "Invoice Number": invoice.get(
@@ -543,7 +564,7 @@ if uploaded_files:
             })
 
 
-            # Supplier row
+            # Supplier
             supplier_rows.append({
                 "File": filename,
                 "Name": supplier.get(
@@ -567,7 +588,7 @@ if uploaded_files:
             })
 
 
-            # Customer row
+            # Customer
             customer_rows.append({
                 "File": filename,
                 "Name": customer.get(
@@ -585,7 +606,7 @@ if uploaded_files:
             })
 
 
-            # Item rows
+            # Items
             for item in invoice_data.get(
                 "items",
                 []
@@ -631,14 +652,38 @@ if uploaded_files:
             customer_rows
         )
 
-        # Create Excel
+
+        # ==========================================
+        # CREATE EXCEL
+        # ==========================================
+
         excel_file = io.BytesIO()
 
+
+        from openpyxl.styles import (
+            Font,
+            PatternFill,
+            Alignment,
+            Border,
+            Side
+        )
+
+        from openpyxl.worksheet.table import (
+            Table,
+            TableStyleInfo
+        )
+
+        from openpyxl.utils import (
+            get_column_letter
+        )
+
+
         with pd.ExcelWriter(
-                excel_file,
-                engine="openpyxl"
+            excel_file,
+            engine="openpyxl"
         ) as writer:
 
+            # Write sheets
             invoices_df.to_excel(
                 writer,
                 sheet_name="Invoices",
@@ -663,103 +708,329 @@ if uploaded_files:
                 index=False
             )
 
-        # Format Excel
-        from openpyxl.styles import Font, PatternFill, Alignment
-        from openpyxl.worksheet.table import Table, TableStyleInfo
 
-        workbook = writer.book
+            workbook = writer.book
 
-        for worksheet in workbook.worksheets:
 
-            # Freeze header row
-            worksheet.freeze_panes = "A2"
+            # Excel colors / styles
+            header_fill = PatternFill(
+                fill_type="solid",
+                fgColor="1F4E78"
+            )
 
-            # Header styling
-            for cell in worksheet[1]:
-                cell.font = Font(
-                    bold=True,
-                    color="FFFFFF"
+            header_font = Font(
+                bold=True,
+                color="FFFFFF",
+                size=11
+            )
+
+            header_alignment = Alignment(
+                horizontal="center",
+                vertical="center"
+            )
+
+            body_alignment = Alignment(
+                vertical="center"
+            )
+
+            border = Border(
+                bottom=Side(
+                    style="thin",
+                    color="D9E1F2"
                 )
+            )
 
-                cell.fill = PatternFill(
-                    fill_type="solid",
-                    fgColor="2563EB"
-                )
 
-                cell.alignment = Alignment(
-                    horizontal="center",
-                    vertical="center"
-                )
+            # Format worksheets
+            for worksheet in workbook.worksheets:
 
-            # Automatic column width
-            for column in worksheet.columns:
+                # Freeze first row
+                worksheet.freeze_panes = "A2"
 
-                max_length = 0
 
-                column_letter = column[0].column_letter
+                # Hide gridlines
+                worksheet.sheet_view.showGridLines = False
 
-                for cell in column:
 
-                    if cell.value is not None:
-                        cell_length = len(
-                            str(cell.value)
-                        )
+                # Header
+                for cell in worksheet[1]:
 
-                        max_length = max(
-                            max_length,
-                            cell_length
-                        )
+                    cell.fill = header_fill
 
-                worksheet.column_dimensions[
-                    column_letter
-                ].width = min(
-                    max(max_length + 2, 12),
-                    50
-                )
+                    cell.font = header_font
 
-            # Enable filters
-            if worksheet.max_row > 1:
+                    cell.alignment = (
+                        header_alignment
+                    )
 
-                last_cell = worksheet.cell(
-                    row=worksheet.max_row,
-                    column=worksheet.max_column
-                ).coordinate
 
-                table_reference = f"A1:{last_cell}"
+                # Header height
+                worksheet.row_dimensions[
+                    1
+                ].height = 26
 
-                table = Table(
-                    displayName=f"Table{worksheet.title}",
-                    ref=table_reference
-                )
 
-                style = TableStyleInfo(
-                    name="TableStyleMedium2",
-                    showFirstColumn=False,
-                    showLastColumn=False,
-                    showRowStripes=True,
-                    showColumnStripes=False
-                )
-
-                table.tableStyleInfo = style
-
-                worksheet.add_table(table)
-
-                # Vertical alignment
-                for row in worksheet.iter_rows():
+                # Body
+                for row in worksheet.iter_rows(
+                    min_row=2
+                ):
 
                     for cell in row:
 
-                        cell.alignment = Alignment(
-                            vertical="center"
+                        cell.alignment = (
+                            body_alignment
                         )
 
-                excel_file.seek(0)
+                        cell.border = border
 
 
+                # Column widths
+                for column_index in range(
+                    1,
+                    worksheet.max_column + 1
+                ):
+
+                    column_letter = (
+                        get_column_letter(
+                            column_index
+                        )
+                    )
+
+                    header = str(
+                        worksheet.cell(
+                            row=1,
+                            column=column_index
+                        ).value
+                    )
+
+
+                    # Custom widths
+                    if header == "File":
+
+                        width = 30
+
+                    elif header == "Invoice Number":
+
+                        width = 24
+
+                    elif header == "Product / Service":
+
+                        width = 35
+
+                    elif header == "Address":
+
+                        width = 40
+
+                    elif header == "IBAN":
+
+                        width = 32
+
+                    elif header == "Name":
+
+                        width = 30
+
+                    elif header in [
+                        "EIK / BULSTAT",
+                        "VAT Number",
+                        "BIC"
+                    ]:
+
+                        width = 22
+
+                    elif header in [
+                        "Date",
+                        "Due Date"
+                    ]:
+
+                        width = 16
+
+                    elif header in [
+                        "Currency",
+                        "Quantity",
+                        "VAT %"
+                    ]:
+
+                        width = 14
+
+                    elif header in [
+                        "Subtotal",
+                        "VAT",
+                        "Total",
+                        "Unit Price"
+                    ]:
+
+                        width = 16
+
+                    else:
+
+                        max_length = 0
+
+                        for cell in worksheet[
+                            get_column_letter(
+                                column_index
+                            )
+                        ]:
+
+                            if cell.value is not None:
+
+                                max_length = max(
+                                    max_length,
+                                    len(
+                                        str(
+                                            cell.value
+                                        )
+                                    )
+                                )
+
+                        width = max(
+                            max_length + 3,
+                            14
+                        )
+
+
+                    worksheet.column_dimensions[
+                        column_letter
+                    ].width = min(
+                        width,
+                        45
+                    )
+
+
+                # Number formatting
+                for row in worksheet.iter_rows(
+                    min_row=2
+                ):
+
+                    for cell in row:
+
+                        header = worksheet.cell(
+                            row=1,
+                            column=cell.column
+                        ).value
+
+
+                        # Money
+                        if header in [
+                            "Subtotal",
+                            "VAT",
+                            "Total",
+                            "Unit Price"
+                        ]:
+
+                            if isinstance(
+                                cell.value,
+                                (int, float)
+                            ):
+
+                                cell.number_format = (
+                                    '#,##0.00'
+                                )
+
+
+                        # Quantity
+                        elif header == "Quantity":
+
+                            if isinstance(
+                                cell.value,
+                                (int, float)
+                            ):
+
+                                cell.number_format = (
+                                    '#,##0.##'
+                                )
+
+
+                        # VAT
+                        elif header == "VAT %":
+
+                            if isinstance(
+                                cell.value,
+                                (int, float)
+                            ):
+
+                                cell.number_format = (
+                                    '0.##'
+                                )
+
+
+                # Center important columns
+                center_columns = [
+                    "Date",
+                    "Due Date",
+                    "Currency",
+                    "Quantity",
+                    "VAT %",
+                    "Invoice Number"
+                ]
+
+
+                for column_index in range(
+                    1,
+                    worksheet.max_column + 1
+                ):
+
+                    header = worksheet.cell(
+                        row=1,
+                        column=column_index
+                    ).value
+
+
+                    if header in center_columns:
+
+                        for row_index in range(
+                            2,
+                            worksheet.max_row + 1
+                        ):
+
+                            worksheet.cell(
+                                row=row_index,
+                                column=column_index
+                            ).alignment = Alignment(
+                                horizontal="center",
+                                vertical="center"
+                            )
+
+
+                # Excel table
+                if worksheet.max_row > 1:
+
+                    last_cell = worksheet.cell(
+                        row=worksheet.max_row,
+                        column=worksheet.max_column
+                    ).coordinate
+
+
+                    table = Table(
+                        displayName=(
+                            f"Table{worksheet.title}"
+                        ),
+                        ref=f"A1:{last_cell}"
+                    )
+
+
+                    table_style = TableStyleInfo(
+                        name="TableStyleMedium2",
+                        showFirstColumn=False,
+                        showLastColumn=False,
+                        showRowStripes=True,
+                        showColumnStripes=False
+                    )
+
+
+                    table.tableStyleInfo = (
+                        table_style
+                    )
+
+                    worksheet.add_table(
+                        table
+                    )
+
+
+        # Prepare Excel file
         excel_file.seek(0)
 
 
-        # Download Excel
+        # Download button
         st.download_button(
             label="Download Excel",
             data=excel_file,
