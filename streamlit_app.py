@@ -371,7 +371,7 @@ if uploaded_files:
             col1, col2, col3, col4 = st.columns(4)
 
 
-            with col1:
+            with col2:
 
                 st.metric(
                     "Invoice Number",
@@ -381,22 +381,12 @@ if uploaded_files:
                 )
 
 
-            with col2:
+            with col3:
 
                 st.metric(
                     "Date",
                     display_value(
                         invoice.get("date")
-                    )
-                )
-
-
-            with col3:
-
-                st.metric(
-                    "Due Date",
-                    display_value(
-                        invoice.get("due_date")
                     )
                 )
 
