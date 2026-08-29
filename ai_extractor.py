@@ -88,6 +88,10 @@ Important rules:
 13. Numbers must be returned as numbers, not strings.
 14. Dates should use YYYY-MM-DD when possible.
 15. Return ONLY valid JSON.
+16. If multiple IBANs are present, return all of them as a list.
+17. If multiple BICs are present, return all of them as a list.
+18. If only one IBAN/BIC is present, return it as a single string.
+19. Never omit a clearly visible IBAN or BIC.
 
 Invoice text:
 

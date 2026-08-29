@@ -61,8 +61,21 @@ def display_value(value):
     if value is None or value == "":
         return "Not found"
 
+    if isinstance(value, list):
+        return "\n".join(str(item) for item in value)
+
     return value
 
+def normalize_value(value):
+    if value is None:
+        return None
+
+    if isinstance(value, list):
+        return ", ".join(
+            str(item) for item in value
+        )
+
+    return value
 
 if uploaded_files:
 
@@ -567,23 +580,23 @@ if uploaded_files:
             # Supplier
             supplier_rows.append({
                 "File": filename,
-                "Name": supplier.get(
-                    "name"
+                "Name": normalize_value(
+                    supplier.get("name")
                 ),
-                "EIK / BULSTAT": supplier.get(
-                    "eik"
+                "EIK / BULSTAT": normalize_value(
+                    supplier.get("eik")
                 ),
-                "VAT Number": supplier.get(
-                    "vat_number"
+                "VAT Number": normalize_value(
+                    supplier.get("vat_number")
                 ),
-                "Address": supplier.get(
-                    "address"
+                "Address": normalize_value(
+                    supplier.get("address")
                 ),
-                "IBAN": supplier.get(
-                    "iban"
+                "IBAN": normalize_value(
+                    supplier.get("iban")
                 ),
-                "BIC": supplier.get(
-                    "bic"
+                "BIC": normalize_value(
+                    supplier.get("bic")
                 )
             })
 
