@@ -1,4 +1,5 @@
 import pandas as pd
+import json
 import streamlit as st
 
 from extractor import extract_text
@@ -135,12 +136,6 @@ if uploaded_file is not None:
 
         with col3:
             st.metric(
-                "Due Date",
-                display_value(invoice.get("due_date"))
-            )
-
-        with col4:
-            st.metric(
                 "Currency",
                 display_value(invoice.get("currency"))
             )
@@ -206,3 +201,39 @@ if uploaded_file is not None:
 
         with st.expander("View raw JSON"):
             st.json(invoice_data)
+
+        # Export data
+        st.divider()
+
+        st.subheader("Export")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            json_data = json.dumps(
+                invoice_data,
+                indent=4,
+                ensure_ascii=False
+            )
+
+            st.download_button(
+                label="Download JSON",
+                data=json_data,
+                file_name="invoice_data.json",
+                mime="application/json"
+            )
+
+        with col2:
+            if items:
+                csv_data = pd.DataFrame(items).to_csv(
+                    index=False
+                )
+
+                st.download_button(
+                    label="Download CSV",
+                    data=csv_data,
+                    file_name="invoice_items.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.info("No items available for CSV export.")
