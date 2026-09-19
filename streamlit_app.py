@@ -95,6 +95,7 @@ if uploaded_files:
         status_text = st.empty()
 
 
+
         # Process invoices
         for index, uploaded_file in enumerate(
             uploaded_files
@@ -203,6 +204,50 @@ if uploaded_files:
                 failed_count
             )
 
+        # Sample invoice
+        if st.button("Try with a sample invoice"):
+            sample_invoice = {
+                "filename": "sample_invoice.pdf",
+                "supplier": {
+                    "name": "Demo Company Ltd.",
+                    "eik": "123456789",
+                    "vat": "BG123456789",
+                    "address": "100 Demo Street, Sofia, Bulgaria",
+                    "iban": "BG80TEST12345678901234",
+                    "bic": "TESTBGSF"
+                },
+                "customer": {
+                    "name": "Sample Customer Ltd.",
+                    "eik": "987654321",
+                    "vat": "BG987654321",
+                    "address": "50 Example Blvd., Varna, Bulgaria"
+                },
+                "invoice_number": "INV-2026-001",
+                "date": "19.09.2026",
+                "due_date": "03.10.2026",
+                "currency": "EUR",
+                "items": [
+                    {
+                        "description": "Laptop computer",
+                        "quantity": 1,
+                        "unit_price": 850.00,
+                        "total": 850.00
+                    },
+                    {
+                        "description": "Wireless mouse",
+                        "quantity": 2,
+                        "unit_price": 25.00,
+                        "total": 50.00
+                    }
+                ],
+                "subtotal": 900.00,
+                "vat": 180.00,
+                "total": 1080.00
+            }
+
+            st.session_state["extracted_invoices"] = [sample_invoice]
+            st.success("Sample invoice loaded.")
+            st.rerun()
 
         # Display each invoice
         for invoice_data in all_invoice_data:
