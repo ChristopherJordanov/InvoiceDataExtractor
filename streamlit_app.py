@@ -66,6 +66,7 @@ def display_value(value):
 
     return value
 
+
 def normalize_value(value):
     if value is None:
         return None
@@ -77,6 +78,66 @@ def normalize_value(value):
 
     return value
 
+
+# Sample invoice
+if st.button("Try with a sample invoice"):
+
+    all_invoice_data = [
+        {
+            "filename": "sample_invoice.pdf",
+
+            "supplier": {
+                "name": "Demo Company Ltd.",
+                "eik": "123456789",
+                "vat_number": "BG123456789",
+                "address": "100 Demo Street, Sofia, Bulgaria",
+                "iban": "BG80TEST12345678901234",
+                "bic": "TESTBGSF"
+            },
+
+            "customer": {
+                "name": "Sample Customer Ltd.",
+                "eik": "987654321",
+                "vat_number": "BG987654321",
+                "address": "50 Example Blvd., Varna, Bulgaria"
+            },
+
+            "invoice": {
+                "number": "INV-2026-001",
+                "date": "19.09.2026",
+                "due_date": "03.10.2026",
+                "currency": "EUR"
+            },
+
+            "items": [
+                {
+                    "description": "Laptop computer",
+                    "quantity": 1,
+                    "unit_price": 850.00,
+                    "vat_rate": 20,
+                    "total_price": 850.00
+                },
+                {
+                    "description": "Wireless mouse",
+                    "quantity": 2,
+                    "unit_price": 25.00,
+                    "vat_rate": 20,
+                    "total_price": 50.00
+                }
+            ],
+
+            "totals": {
+                "subtotal": 900.00,
+                "vat": 180.00,
+                "total": 1080.00
+            }
+        }
+    ]
+
+    st.session_state["sample_invoice_data"] = all_invoice_data
+
+
+# Uploaded invoices
 if uploaded_files:
 
     st.success(
@@ -93,8 +154,6 @@ if uploaded_files:
         progress_bar = st.progress(0)
 
         status_text = st.empty()
-
-
 
         # Process invoices
         for index, uploaded_file in enumerate(
@@ -125,23 +184,19 @@ if uploaded_files:
 
                     continue
 
-
                 # AI integration
                 invoice_data = extract_invoice_data(
                     text
                 )
-
 
                 # Add original filename
                 invoice_data["filename"] = (
                     uploaded_file.name
                 )
 
-
                 all_invoice_data.append(
                     invoice_data
                 )
-
 
                 progress_bar.progress(
                     (index + 1) / len(uploaded_files)
@@ -158,9 +213,7 @@ if uploaded_files:
                     (index + 1) / len(uploaded_files)
                 )
 
-
         status_text.empty()
-
 
         # Stop if nothing was processed
         if not all_invoice_data:
@@ -170,7 +223,6 @@ if uploaded_files:
             )
 
             st.stop()
-
 
         # Processing summary
         processed_count = len(
@@ -182,11 +234,9 @@ if uploaded_files:
             - processed_count
         )
 
-
         st.divider()
 
         st.subheader("Processing Summary")
-
 
         col1, col2 = st.columns(2)
 
@@ -204,372 +254,356 @@ if uploaded_files:
                 failed_count
             )
 
-        # Sample invoice
-        if st.button("Try with a sample invoice"):
-            sample_invoice = {
-                "filename": "sample_invoice.pdf",
-                "supplier": {
-                    "name": "Demo Company Ltd.",
-                    "eik": "123456789",
-                    "vat": "BG123456789",
-                    "address": "100 Demo Street, Sofia, Bulgaria",
-                    "iban": "BG80TEST12345678901234",
-                    "bic": "TESTBGSF"
-                },
-                "customer": {
-                    "name": "Sample Customer Ltd.",
-                    "eik": "987654321",
-                    "vat": "BG987654321",
-                    "address": "50 Example Blvd., Varna, Bulgaria"
-                },
-                "invoice_number": "INV-2026-001",
-                "date": "19.09.2026",
-                "due_date": "03.10.2026",
-                "currency": "EUR",
-                "items": [
-                    {
-                        "description": "Laptop computer",
-                        "quantity": 1,
-                        "unit_price": 850.00,
-                        "total": 850.00
-                    },
-                    {
-                        "description": "Wireless mouse",
-                        "quantity": 2,
-                        "unit_price": 25.00,
-                        "total": 50.00
-                    }
-                ],
-                "subtotal": 900.00,
-                "vat": 180.00,
-                "total": 1080.00
-            }
+        # Save uploaded invoice data
+        st.session_state["uploaded_invoice_data"] = (
+            all_invoice_data
+        )
 
-            st.session_state["extracted_invoices"] = [sample_invoice]
-            st.success("Sample invoice loaded.")
-            st.rerun()
 
-        # Display each invoice
-        for invoice_data in all_invoice_data:
+# Get sample invoice data
+sample_invoice_data = st.session_state.get(
+    "sample_invoice_data",
+    []
+)
 
-            filename = invoice_data.get(
-                "filename",
-                "Unknown file"
+
+# Get uploaded invoice data
+uploaded_invoice_data = st.session_state.get(
+    "uploaded_invoice_data",
+    []
+)
+
+
+# Select which invoices to display
+if sample_invoice_data:
+    all_invoice_data = sample_invoice_data
+elif uploaded_invoice_data:
+    all_invoice_data = uploaded_invoice_data
+else:
+    all_invoice_data = []
+
+
+# Display each invoice
+    for invoice_data in all_invoice_data:
+
+        filename = invoice_data.get(
+            "filename",
+            "Unknown file"
+        )
+
+        supplier = invoice_data.get(
+            "supplier",
+            {}
+        )
+
+        customer = invoice_data.get(
+            "customer",
+            {}
+        )
+
+        invoice = invoice_data.get(
+            "invoice",
+            {}
+        )
+
+        items = invoice_data.get(
+            "items",
+            []
+        )
+
+        totals = invoice_data.get(
+            "totals",
+            {}
+        )
+
+
+        # Find missing important fields
+        missing_fields = []
+
+
+        if not supplier.get("name"):
+            missing_fields.append(
+                "Supplier name"
             )
 
-            supplier = invoice_data.get(
-                "supplier",
-                {}
+        if not supplier.get("eik"):
+            missing_fields.append(
+                "Supplier EIK / BULSTAT"
             )
 
-            customer = invoice_data.get(
-                "customer",
-                {}
+        if not supplier.get("iban"):
+            missing_fields.append(
+                "Supplier IBAN"
             )
 
-            invoice = invoice_data.get(
-                "invoice",
-                {}
+        if not invoice.get("number"):
+            missing_fields.append(
+                "Invoice number"
             )
 
-            items = invoice_data.get(
-                "items",
-                []
+        if not invoice.get("date"):
+            missing_fields.append(
+                "Invoice date"
             )
 
-            totals = invoice_data.get(
-                "totals",
-                {}
-            )
-
-
-            # Find missing important fields
-            missing_fields = []
-
-
-            if not supplier.get("name"):
-                missing_fields.append(
-                    "Supplier name"
-                )
-
-            if not supplier.get("eik"):
-                missing_fields.append(
-                    "Supplier EIK / BULSTAT"
-                )
-
-            if not supplier.get("iban"):
-                missing_fields.append(
-                    "Supplier IBAN"
-                )
-
-            if not invoice.get("number"):
-                missing_fields.append(
-                    "Invoice number"
-                )
-
-            if not invoice.get("date"):
-                missing_fields.append(
-                    "Invoice date"
-                )
-
-            if totals.get("total") is None:
-                missing_fields.append(
-                    "Total"
-                )
-
-
-            # Invoice section
-            st.divider()
-
-            st.subheader(
-                f"📄 {filename}"
+        if totals.get("total") is None:
+            missing_fields.append(
+                "Total"
             )
 
 
-            # Extraction status
-            if missing_fields:
-
-                st.warning(
-                    "Missing information: "
-                    + ", ".join(missing_fields)
-                )
-
-            else:
-
-                st.success(
-                    "All important fields were extracted."
-                )
-
-
-            # Supplier / Customer
-            col1, col2 = st.columns(2)
-
-
-            with col1:
-
-                st.markdown(
-                    "### Supplier"
-                )
-
-                st.write(
-                    "**Name:**",
-                    display_value(
-                        supplier.get("name")
-                    )
-                )
-
-                st.write(
-                    "**EIK / BULSTAT:**",
-                    display_value(
-                        supplier.get("eik")
-                    )
-                )
-
-                st.write(
-                    "**VAT Number:**",
-                    display_value(
-                        supplier.get("vat_number")
-                    )
-                )
-
-                st.write(
-                    "**Address:**",
-                    display_value(
-                        supplier.get("address")
-                    )
-                )
-
-                st.write(
-                    "**IBAN:**",
-                    display_value(
-                        supplier.get("iban")
-                    )
-                )
-
-                st.write(
-                    "**BIC:**",
-                    display_value(
-                        supplier.get("bic")
-                    )
-                )
-
-
-            with col2:
-
-                st.markdown(
-                    "### Customer"
-                )
-
-                st.write(
-                    "**Name:**",
-                    display_value(
-                        customer.get("name")
-                    )
-                )
-
-                st.write(
-                    "**EIK / BULSTAT:**",
-                    display_value(
-                        customer.get("eik")
-                    )
-                )
-
-                st.write(
-                    "**VAT Number:**",
-                    display_value(
-                        customer.get("vat_number")
-                    )
-                )
-
-                st.write(
-                    "**Address:**",
-                    display_value(
-                        customer.get("address")
-                    )
-                )
-
-
-            # Invoice information
-            st.markdown(
-                "### Invoice"
-            )
-
-
-            col1, col2, col3, col4 = st.columns(4)
-
-
-            with col1:
-
-                st.metric(
-                    "Invoice Number",
-                    display_value(
-                        invoice.get("number")
-                    )
-                )
-
-
-            with col2:
-
-                st.metric(
-                    "Date",
-                    display_value(
-                        invoice.get("date")
-                    )
-                )
-
-
-            with col3:
-
-                st.metric(
-                    "Due Date",
-                    display_value(
-                        invoice.get("due_date")
-                    )
-                )
-
-
-            with col4:
-
-                st.metric(
-                    "Currency",
-                    display_value(
-                        invoice.get("currency")
-                    )
-                )
-
-
-            # Invoice items
-            st.markdown(
-                "### Items"
-            )
-
-
-            if items:
-
-                items_table = pd.DataFrame(
-                    items
-                )
-
-                items_table = items_table.rename(
-                    columns={
-                        "description": "Product / Service",
-                        "quantity": "Quantity",
-                        "unit_price": "Unit Price",
-                        "vat_rate": "VAT %",
-                        "total_price": "Total"
-                    }
-                )
-
-                st.dataframe(
-                    items_table,
-                    use_container_width=True,
-                    hide_index=True
-                )
-
-            else:
-
-                st.info(
-                    "No invoice items found."
-                )
-
-
-            # Totals
-            st.markdown(
-                "### Totals"
-            )
-
-
-            col1, col2, col3 = st.columns(3)
-
-
-            with col1:
-
-                st.metric(
-                    "Subtotal",
-                    display_value(
-                        totals.get("subtotal")
-                    )
-                )
-
-
-            with col2:
-
-                st.metric(
-                    "VAT",
-                    display_value(
-                        totals.get("vat")
-                    )
-                )
-
-
-            with col3:
-
-                st.metric(
-                    "Total",
-                    display_value(
-                        totals.get("total")
-                    )
-                )
-
-        # Excel export
-
+        # Invoice section
         st.divider()
 
-        st.subheader("Excel Export")
+        st.subheader(
+            f"📄 {filename}"
+        )
 
 
-        def normalize_excel_value(value):
-            """Convert lists into readable Excel values."""
+        # Extraction status
+        if missing_fields:
 
-            if value is None:
-                return ""
+            st.warning(
+                "Missing information: "
+                + ", ".join(missing_fields)
+            )
 
-            if isinstance(value, list):
-                return ", ".join(
-                    str(item) for item in value
+        else:
+
+            st.success(
+                "All important fields were extracted."
+            )
+
+
+        # Supplier / Customer
+        col1, col2 = st.columns(2)
+
+
+        with col1:
+
+            st.markdown(
+                "### Supplier"
+            )
+
+            st.write(
+                "**Name:**",
+                display_value(
+                    supplier.get("name")
                 )
+            )
 
-            return str(value)
+            st.write(
+                "**EIK / BULSTAT:**",
+                display_value(
+                    supplier.get("eik")
+                )
+            )
+
+            st.write(
+                "**VAT Number:**",
+                display_value(
+                    supplier.get("vat_number")
+                )
+            )
+
+            st.write(
+                "**Address:**",
+                display_value(
+                    supplier.get("address")
+                )
+            )
+
+            st.write(
+                "**IBAN:**",
+                display_value(
+                    supplier.get("iban")
+                )
+            )
+
+            st.write(
+                "**BIC:**",
+                display_value(
+                    supplier.get("bic")
+                )
+            )
+
+
+        with col2:
+
+            st.markdown(
+                "### Customer"
+            )
+
+            st.write(
+                "**Name:**",
+                display_value(
+                    customer.get("name")
+                )
+            )
+
+            st.write(
+                "**EIK / BULSTAT:**",
+                display_value(
+                    customer.get("eik")
+                )
+            )
+
+            st.write(
+                "**VAT Number:**",
+                display_value(
+                    customer.get("vat_number")
+                )
+            )
+
+            st.write(
+                "**Address:**",
+                display_value(
+                    customer.get("address")
+                )
+            )
+
+
+        # Invoice information
+        st.markdown(
+            "### Invoice"
+        )
+
+
+        col1, col2, col3, col4 = st.columns(4)
+
+
+        with col1:
+
+            st.metric(
+                "Invoice Number",
+                display_value(
+                    invoice.get("number")
+                )
+            )
+
+
+        with col2:
+
+            st.metric(
+                "Date",
+                display_value(
+                    invoice.get("date")
+                )
+            )
+
+
+        with col3:
+
+            st.metric(
+                "Due Date",
+                display_value(
+                    invoice.get("due_date")
+                )
+            )
+
+
+        with col4:
+
+            st.metric(
+                "Currency",
+                display_value(
+                    invoice.get("currency")
+                )
+            )
+
+
+        # Invoice items
+        st.markdown(
+            "### Items"
+        )
+
+
+        if items:
+
+            items_table = pd.DataFrame(
+                items
+            )
+
+            items_table = items_table.rename(
+                columns={
+                    "description": "Product / Service",
+                    "quantity": "Quantity",
+                    "unit_price": "Unit Price",
+                    "vat_rate": "VAT %",
+                    "total_price": "Total"
+                }
+            )
+
+            st.dataframe(
+                items_table,
+                use_container_width=True,
+                hide_index=True
+            )
+
+        else:
+
+            st.info(
+                "No invoice items found."
+            )
+
+
+        # Totals
+        st.markdown(
+            "### Totals"
+        )
+
+
+        col1, col2, col3 = st.columns(3)
+
+
+        with col1:
+
+            st.metric(
+                "Subtotal",
+                display_value(
+                    totals.get("subtotal")
+                )
+            )
+
+
+        with col2:
+
+            st.metric(
+                "VAT",
+                display_value(
+                    totals.get("vat")
+                )
+            )
+
+
+        with col3:
+
+            st.metric(
+                "Total",
+                display_value(
+                    totals.get("total")
+                )
+            )
+
+    # Excel export
+
+    st.divider()
+
+    st.subheader("Excel Export")
+
+
+    def normalize_excel_value(value):
+        """Convert lists into readable Excel values."""
+
+        if value is None:
+            return ""
+
+        if isinstance(value, list):
+            return ", ".join(
+                str(item) for item in value
+            )
+
+        return str(value)
 
 
         # Create one row per invoice
